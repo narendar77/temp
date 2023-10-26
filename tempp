@@ -1,0 +1,296 @@
+
+---
+
+  - name: set rancher sbx url and credentials
+    set_fact:
+      rancher_host: "{{ RANCHER_SBX_URL }}"
+      rancher_user: "{{ rancher_sbx_user }}"
+      rancher_password: "{{ rancher_sbx_password }}"
+      rancher_group_id_access: "{{ rancher_group_id_sadc_npe_access }}"
+    when: "env == 'sbx'"
+
+
+  - name: set rancher dev url and credentials
+    set_fact:
+      rancher_host: "{{ RANCHER_DEV_URL }}"
+      rancher_user: "{{ rancher_dev_user }}"
+      rancher_password: "{{ rancher_dev_password }}"
+      rancher_group_id_access: "{{ rancher_group_id_sadc_npe_access }}"
+    when: "env == 'dev'"
+
+  - name: set rancher stage url and credentials
+    set_fact:
+      rancher_host: "{{ RANCHER_STG_URL }}"
+      rancher_user: "{{ rancher_stg_user }}"
+      rancher_password: "{{ rancher_stg_password }}"
+      rancher_group_id_access: "{{ rancher_group_id_sadc_npe_access }}"
+    when: "env == 'stg'"
+
+#  - name: set rancher npe url
+#    set_fact:
+#      rancher_host: "{{ RANCHER_NPE_URL }}"
+#      rancher_group_id_access: "{{ rancher_group_id_sadc_npe_access }}"
+#    when: "env in NPE_ENVS"
+
+  - name: set rancher prod url
+    set_fact:
+      rancher_host: "{{ RANCHER_SA_PROD_URL }}"
+      rancher_group_id_access: "{{ rancher_group_id_sadc_prd_access }}"
+    when: "env in PROD_ENVS and dc == 'sadc'"
+
+  - name: set rancher prod url
+    set_fact:
+      rancher_host: "{{ RANCHER_WS_PROD_URL }}"
+      rancher_group_id_access: "{{ rancher_group_id_wsdc_prd_access }}"
+    when: "env in PROD_ENVS and dc == 'wsdc'"
+
+  # - name: set rancher_group_id_access_by_platform for wdsc prod when network_zone is defined
+  #   set_fact:
+  #     rancher_group_id_access_by_platform: "{{ vars[platform_name + '_wsdc_prd_groups'] }}"
+  #   when: "env in PROD_ENVS and dc == 'wsdc' and network_zone is defined"
+
+  # - name: set rancher_group_id_access_by_platform for sadc prod when network_zone is defined
+  #   set_fact:
+  #     rancher_group_id_access_by_platform: "{{ vars[platform_name + '_sadc_prd_groups'] }}"
+  #   when: "env in PROD_ENVS and dc == 'sadc' and network_zone is defined"
+  
+  # - name: set rancher_group_id_access_by_platform for NPE when network_zone is defined
+  #   set_fact:
+  #     rancher_group_id_access_by_platform: "{{ vars[platform_name + '_npe_groups'] }}"
+  #   when: "env in NPE_ENVS and network_zone is defined"
+
+  # - debug:
+  #     msg: "{{ rancher_group_id_access }}"
+
+#  - name: set rancher npe api token
+#    set_fact:
+#      rancher_user: "{{ rancher_npe_user }}"
+#      rancher_password: "{{ rancher_npe_password }}"
+#    when: "env in NPE_ENVS"
+
+  - name: set rancher SADC prod api token
+    set_fact:
+      rancher_user: "{{ rancher_sa_prod_user }}"
+      rancher_password: "{{ rancher_sa_prod_password }}"
+    when: "env in PROD_ENVS and dc == 'sadc'"
+
+  - name: set rancher WSDC prod api token
+    set_fact:
+      rancher_user: "{{ rancher_ws_prod_user }}"
+      rancher_password: "{{ rancher_ws_prod_password }}"
+    when: "env in PROD_ENVS and dc == 'wsdc'"
+
+
+  - name: set cluster name, hostpath prefix for master and worker shared cluster when app_name and network_zone are not defined
+    set_fact:
+      rancher_clustername: carbon-{{ dc }}-{{ env }}-{{ platform_name }}-cluster-{{ cluster_version }}
+#      master_hostname_prefix: lxk8s-carbon-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-master
+#      worker_hostname_prefix: lxk8s-carbon-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-worker
+    when: (app_name is not defined or app_name == "") and (network_zone is not defined or network_zone == "")
+
+  - name: set cluster name, hostpath prefix for master and worker dedicated cluster when app_name is defined but network_zone is not defined
+    set_fact:
+      rancher_clustername: carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-cluster-{{ cluster_version }}
+#      master_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-master
+#      worker_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-worker
+    when: (app_name is defined and app_name != "") and (network_zone is not defined or network_zone == "")
+
+  - name: set cluster name, hostpath prefix for master and worker dedicated cluster when network_zone is defined but app_name is not defined
+    set_fact:
+      rancher_clustername: carbon-{{ network_zone }}-{{ dc }}-{{ env }}-{{ platform_name }}-cluster-{{ cluster_version }}
+#      master_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-master
+#      worker_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-worker
+    when: (app_name is not defined or app_name == "") and (network_zone is defined and network_zone != "")
+
+  - name: set cluster name, hostpath prefix for master and worker dedicated cluster when both network_zone and app_name are defined
+    set_fact:
+      rancher_clustername: carbon-{{ network_zone }}-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-cluster-{{ cluster_version }}
+#      master_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-master
+#      worker_hostname_prefix: lxk8s-carbon-{{ app_name }}-{{ dc }}-{{ env }}-{{ platform_name }}-{{ item.azid }}-v1-worker
+    when: (app_name is defined and app_name != "") and (network_zone is defined and network_zone != "")
+
+
+#  - debug:
+#      msg: "app name: {{ rancher_clustername }}"
+
+  - name: Check if cluster already exists
+    delegate_to: localhost
+    run_once: true
+    uri:
+      url: https://{{ rancher_host }}/v3/clusters/?name={{ rancher_clustername }}
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: GET
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: no
+    register: query_rancher_response
+
+#  - debug:
+#      msg: "{{ query_rancher_response.json.data[0].id }}"
+
+#  - name: cluster exist notify the user
+#    fail: msg="{{ rancher_clustername }} cluster already exist!!!"
+#    vars:
+#      jmesquery: "data[0].name"
+#    when: (query_rancher_response.json | json_query(jmesquery) == rancher_clustername and rancher_cluster_state == "present")
+
+
+
+  - name: Get cluster template id and template revision id
+    delegate_to: localhost
+    run_once: true
+    uri:
+      url: https://{{ rancher_host }}/v3/clustertemplates?name={{ rke_template_name }}
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: GET
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: yes
+      status_code: 200
+    register: rancher_cluster_tmpl
+
+#  - debug:
+#      msg: "{{ rancher_cluster_tmpl  }}{{ rancher_cluster_tmpl.json.data[0].defaultRevisionId }} {{ rancher_cluster_tmpl.json.data[0].id }}"
+
+  - name: parsing cluster template
+    template:
+      src: cluster.json.j2
+      dest: cluster.json
+
+  - name: Create k8s cluster on rancher
+    delegate_to: localhost
+    run_once: true
+    vars:
+      jmesquery: "data[0].name"
+    uri:
+      url: https://{{ rancher_host }}/v3/cluster?_replace=true
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: POST
+      body_format: json
+      body: "{{ lookup('file','cluster.json') }}"
+#      body: { "name":"{{ rancher_clustername }}","clusterTemplateRevisionId":"{{ rancher_cluster_tmpl.json.data[0].defaultRevisionId }}","clusterTemplateId": "{{ rancher_cluster_tmpl.json.data[0].id }}" }
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: no
+      status_code: 201
+    register: rancher_cluster
+    when: (query_rancher_response.json | json_query(jmesquery) != rancher_clustername and rancher_cluster_state == "present")
+
+#  - debug:
+#      msg: " {{ rancher_cluster.json.id }}"
+
+  - name: get and set fact for clusterid
+    set_fact:
+      clusterid: "{{ rancher_cluster.json.id }}"
+    when: rancher_cluster.json.id is defined
+
+  - name: get and set fact for clusterid
+    set_fact:
+      clusterid: "{{ query_rancher_response.json.data[0].id }}"
+    when: query_rancher_response.json.data[0].id is defined
+
+  - name: add groups/members access to the cluster
+    uri:
+      url: https://{{ rancher_host }}/v3/clusterroletemplatebindings
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: POST
+      body_format: json
+#      body: "{{ lookup('file','cluster.json') }}"
+      body: {"clusterId": "{{ clusterid }}","groupPrincipalId": "{{ item }}","roleTemplateId": "cluster-owner"}
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: no
+      status_code: 201
+    loop: "{{ rancher_group_id_access }}"
+
+
+  - name: add groups/members access to the cluster according to platform 
+    uri:
+      url: https://{{ rancher_host }}/v3/clusterroletemplatebindings
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: POST
+      body_format: json
+      body: {"clusterId": "{{ clusterid }}","groupPrincipalId": "{{ item.group }}","roleTemplateId": "{{ item.role }}"}
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: no
+      status_code: 201
+    loop: "{{ rancher_group_id_read_access }}"
+    when: platform_name == 'app' or platform_name == 'gitops'
+
+  - name: debug pool
+    debug:
+      msg: " {{ rancher_clustername }}"
+
+  - name: Check pool
+    include_tasks: pool_check.yml
+    when: (query_rancher_response.json.data[0].name is defined and query_rancher_response.json.data[0].name == rancher_clustername)
+
+  - name: Add master and worker nodes to the cluster
+    include_tasks: rke.yml
+    loop: "{{ k8s_nodes }}"
+
+  - name: Wait for "{{ rancher_clustername }}" RKE Cluster to come up
+    delegate_to: localhost
+    run_once: true
+    uri:
+      url: "https://{{ rancher_host }}/v3/clusters/{{ clusterid }}"
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      force_basic_auth: yes
+      status_code: 200
+      method: GET
+      validate_certs: no
+    register: result
+    until: result.json.state.find("active") != -1
+    retries: 250
+    delay: 10
+    when: (rancher_cluster_state == 'present')
+
+  - name: Get kubeconfig file
+    delegate_to: 127.0.0.1
+    run_once: true
+    uri:
+      url: https://{{ rancher_host }}/v3/clusters/{{ clusterid }}?action=generateKubeconfig
+      user: "{{ rancher_user }}"
+      password: "{{ rancher_password }}"
+      method: POST
+      validate_certs: no
+      force_basic_auth: yes
+      return_content: no
+    register: cluster_kubeconfig
+
+  - name: create fact for kubeconfig
+    set_fact:
+      kubeconfig: "{{ cluster_kubeconfig.json |json_query('config') }}"
+
+#  - debug:
+#      msg: "{{ kubeconfig }}"
+
+  - copy:
+      content: "{{ cluster_kubeconfig.json |json_query('config') }}"
+      dest: kubeconfig.yaml
+
+#  Test RKE Cluster
+
+#  - name: Create a nginx namespace for testing
+#    community.kubernetes.k8s:
+#      name: nginx
+#      api_version: v1
+#      kind: Namespace
+#      state: present
+
+#  - name: parse the nginx file
+#    template:
+#      src: nginx.yaml.j2
+#      dest: nginx.yaml
+
+#  - name: Create a Deployment by reading the definition from a local file
+#    community.kubernetes.k8s:
+#      state: present
+#      definition: "{{ lookup('file','nginx.yaml') }}"
